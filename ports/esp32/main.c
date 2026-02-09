@@ -147,13 +147,16 @@ soft_reset:
     machine_i2s_init0();
     #endif
 
-    // run boot-up scripts
-    pyexec_frozen_module("_boot.py", false);
-    int ret = pyexec_file_if_exists("boot.py");
-
     #if MICROPY_HW_ENABLE_USBDEV
     mp_usbd_init();
     #endif
+
+    // run boot-up scripts
+    int ret = pyexec_frozen_module("_boot.py", false);
+    if (ret & PYEXEC_FORCED_EXIT) {
+        goto auth;
+    }	
+    ret = pyexec_file_if_exists("boot.py");
 
     if (ret & PYEXEC_FORCED_EXIT) {
         goto soft_reset_exit;
@@ -163,6 +166,15 @@ soft_reset:
         if (ret & PYEXEC_FORCED_EXIT) {
             goto soft_reset_exit;
         }
+    }
+
+auth:
+
+    // Check authentication and PIN before getting REPL
+    ret = pyexec_frozen_module("_auth.py", false);
+    if (ret & PYEXEC_FORCED_EXIT) {
+       // Authentication failed, perform soft reboot or other actions
+       goto soft_reset_exit;
     }
 
     for (;;) {
