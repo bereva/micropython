@@ -34,13 +34,15 @@ if bool('b R e A k B y P a S s' not in RTC().memory().decode()) == True:
     kbd_intr(3)
     
     try:
-        # Check for break-force file in the filesystem
-        try: stat(__FORCE_BREAK_FILENAME)
-        except OSError:
+        # Check for force-break file in the filesystem
+        try: 
+            stat(__FORCE_BREAK_FILENAME)
             print(__FORCE_BREAK_FILENAME + " file found: breaking execution...")
-            raise KeyboardInterrupt
+            raise RuntimeError("Force execution break")
+        except RuntimeError: raise KeyboardInterrupt
+        except OSError: pass        
         
-        # Start countdown
+        # Break-force file not found: start countdown
         while __BREAK_WAIT_TIME_SECONDS > 0:
             print("Hit CTRL-C to break execution (" + str(__BREAK_WAIT_TIME_SECONDS) + " sec. left)...")
             sleep_ms(1000)
